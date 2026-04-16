@@ -168,7 +168,14 @@ jobs:
           S3_REGION: ${{ secrets.S3_REGION }}
           GITHUB_ACTIONS: true
         run: |
-          if [ -n "$S3_ENDPOINT_URL" ] && [[ "$S3_ENDPOINT_URL" != http://* ]] && [[ "$S3_ENDPOINT_URL" != https://* ]]; then
+          if [ -n "$S3_ENDPOINT_URL" ]; then
+            S3_ENDPOINT_URL="$(printf '%s' "$S3_ENDPOINT_URL" | tr -d '[:space:]')"
+            S3_ENDPOINT_URL="${S3_ENDPOINT_URL#http://}"
+            S3_ENDPOINT_URL="${S3_ENDPOINT_URL#https://}"
+            S3_ENDPOINT_URL="${S3_ENDPOINT_URL%%/*}"
+            if [[ "$S3_ENDPOINT_URL" != *.* ]]; then
+              S3_ENDPOINT_URL="${S3_ENDPOINT_URL}.r2.cloudflarestorage.com"
+            fi
             export S3_ENDPOINT_URL="https://$S3_ENDPOINT_URL"
           fi
           if [ -z "$S3_REGION" ]; then
