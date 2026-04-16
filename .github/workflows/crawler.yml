@@ -167,4 +167,11 @@ jobs:
           S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
           S3_REGION: ${{ secrets.S3_REGION }}
           GITHUB_ACTIONS: true
-        run: uv run python -m trendradar
+        run: |
+          if [ -n "$S3_ENDPOINT_URL" ] && [[ "$S3_ENDPOINT_URL" != http://* ]] && [[ "$S3_ENDPOINT_URL" != https://* ]]; then
+            export S3_ENDPOINT_URL="https://$S3_ENDPOINT_URL"
+          fi
+          if [ -z "$S3_REGION" ]; then
+            export S3_REGION="auto"
+          fi
+          uv run python -m trendradar
