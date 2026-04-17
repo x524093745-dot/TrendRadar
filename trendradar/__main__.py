@@ -924,14 +924,25 @@ class NewsAnalyzer:
         has_notification = self._has_notification_configured()
         cfg = self.ctx.config
 
-        # 检查是否有有效内容（热榜或RSS）
+        # 检查是否有有效内容（热榜、RSS 或独立展示区兜底内容）
         has_news_content = self._has_valid_content(stats, new_titles)
         has_rss_content = bool(rss_items and len(rss_items) > 0)
-        has_any_content = has_news_content or has_rss_content
+        has_standalone_content = bool(
+            standalone_data
+            and (
+                standalone_data.get("platforms")
+                or standalone_data.get("rss_feeds")
+            )
+        )
+        has_any_content = has_news_content or has_rss_content or has_standalone_content
 
         # 计算热榜匹配条数
         news_count = sum(len(stat.get("titles", [])) for stat in stats) if stats else 0
         rss_count = sum(stat.get("count", 0) for stat in rss_items) if rss_items else 0
+        standalone_count = 0
+        if standalone_data:
+            standalone_count += sum(len(item.get("items", [])) for item in standalone_data.get("platforms", []))
+            standalone_count += sum(len(item.get("items", [])) for item in standalone_data.get("rss_feeds", []))
 
         if (
             cfg["ENABLE_NOTIFICATION"]
@@ -944,7 +955,9 @@ class NewsAnalyzer:
                 content_parts.append(f"热榜 {news_count} 条")
             if rss_count > 0:
                 content_parts.append(f"RSS {rss_count} 条")
-            total_count = news_count + rss_count
+            if standalone_count > 0:
+                content_parts.append(f"精选兜底 {standalone_count} 条")
+            total_count = news_count + rss_count + standalone_count
             print(f"[推送] 准备发送：{' + '.join(content_parts)}，合计 {total_count} 条")
 
             # 调度系统决策
